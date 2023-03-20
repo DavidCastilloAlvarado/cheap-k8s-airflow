@@ -1,0 +1,205 @@
+webserverSecretKey: cc550<mysecret>055cc
+
+# Airflow Worker Config
+workers:
+  # Number of airflow celery workers in StatefulSet
+  replicas: 0
+  persistence:
+    # Enable persistent volumes
+    enabled: false
+
+  # # Select certain nodes for airflow worker pods.
+  # nodeSelector:
+  #   node-airflow: worker
+  # Mount additional volumes into worker.
+  extraVolumes:
+    - name: temp-files
+      emptyDir:
+        sizeLimit: 10Gi
+
+  extraVolumeMounts:
+    - mountPath: /myvol/airflow/temp
+      name: temp-files
+
+  tolerations:
+    - key: "only"
+      operator: "Equal"
+      value: "workers"
+      effect: "NoSchedule"
+
+  nodeSelector:
+    node-airflow: worker
+
+  keda:
+    enabled: true
+    # Minimum number of workers created by keda
+    minReplicaCount: 0
+
+    # Maximum number of workers created by keda
+    maxReplicaCount: 3
+
+    # Specify HPA related options
+    advanced:
+      horizontalPodAutoscalerConfig:
+        behavior:
+          scaleDown:
+            stabilizationWindowSeconds: 100
+            policies:
+              - type: Percent
+                value: 100
+                periodSeconds: 15
+
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 3000Mi
+    requests:
+      cpu: 400m
+      memory: 2000Mi
+
+  # env: []
+
+# Airflow scheduler settings
+scheduler:
+  # Airflow 2.0 allows users to run multiple schedulers,
+  # However this feature is only recommended for MySQL 8+ and Postgres
+  # replicas: 1
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  # env: []
+
+# Airflow create user job settings
+# createUserJob:
+#   env: []
+
+#   resources:
+#    limits:
+#     cpu: 100m
+#     memory: 128Mi
+#    requests:
+#     cpu: 100m
+#     memory: 128Mi
+
+# Airflow webserver settings
+webserver:
+  # resources:
+  #   limits:
+  #     cpu: 100m
+  #     memory: 800Mi
+  #   requests:
+  #     cpu: 100m
+  #     memory: 128Mi
+
+  # Create initial user.
+  defaultUser:
+    enabled: true
+    role: Admin
+    username: admin
+    email: admin@example.com
+    firstName: admin
+    lastName: user
+    password: admin
+
+  # env: []
+
+# Airflow Triggerer Config
+triggerer:
+  enabled: true
+  # Number of airflow triggerers in the deployment
+  # replicas: 1
+
+  resources:
+    limits:
+      cpu: 50m
+      memory: 800Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+# Airflow Dag Processor Config
+# dagProcessor:
+#   enabled: false
+#   # Number of airflow dag processors in the deployment
+#   replicas: 1
+
+#   resources:
+#    limits:
+#     cpu: 100m
+#     memory: 128Mi
+#    requests:
+#     cpu: 100m
+#     memory: 128Mi
+
+# This runs as a CronJob to cleanup old pods.
+cleanup:
+  enabled: true
+  # Run every 15 minutes
+  schedule: "*/15 * * * *"
+
+# Git sync
+dags:
+  persistence:
+    # Enable persistent volume for storing dags
+    enabled: false
+
+  gitSync:
+    enabled: true
+
+    # git repo clone url
+    # ssh example: git@github.com:apache/airflow.git
+    # https example: https://github.com/apache/airflow.git
+    repo: https://github.com/apache/airflow.git
+    branch: v2-2-stable
+    rev: HEAD
+    depth: 1
+    # the number of consecutive failures allowed before aborting
+    maxFailures: 0
+    # subpath within the repo where dags are located
+    # should be "" if dags are at repo root
+    subPath: "tests/dags"
+    # if your repo needs a user name password
+    # you can load them to a k8s secret like the one below
+    #   ---
+    #   apiVersion: v1
+    #   kind: Secret
+    #   metadata:
+    #     name: git-credentials
+    #   data:
+    #     GIT_SYNC_USERNAME: <base64_encoded_git_username>
+    #     GIT_SYNC_PASSWORD: <base64_encoded_git_password>
+    # and specify the name of the secret below
+    #
+    # credentialsSecret: git-credentials
+    #
+    #
+    # If you are using an ssh clone url, you can load
+    # the ssh private key to a k8s secret like the one below
+    #   ---
+    #   apiVersion: v1
+    #   kind: Secret
+    #   metadata:
+    #     name: airflow-ssh-secret
+    #   data:
+    #     # key needs to be gitSshKey
+    #     gitSshKey: <base64_encoded_data>
+    # and specify the name of the secret below
+    # sshKeySecret: airflow-ssh-secret
+    #
+    # If you are using an ssh private key, you can additionally
+    # specify the content of your known_hosts file, example:
+    #
+    # knownHosts: |
+    #    <host1>,<ip1> <key1>
+    #    <host2>,<ip2> <key2>
+
+    # interval between git sync attempts in seconds
+    # high values are more likely to cause DAGs to become out of sync between different components
+    # low values cause more traffic to the remote git repository
+    wait: 5
