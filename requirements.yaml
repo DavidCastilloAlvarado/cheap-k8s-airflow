@@ -1,0 +1,10 @@
+apiVersion: v1
+data:
+  requirements.txt: |-
+    google-cloud-storage
+    google-cloud-pubsub
+    google-cloud-bigquery
+kind: ConfigMap
+metadata:
+  name: requirements
+  namespace: airflow

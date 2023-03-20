@@ -8,18 +8,34 @@ workers:
     # Enable persistent volumes
     enabled: false
 
-  # # Select certain nodes for airflow worker pods.
-  # nodeSelector:
-  #   node-airflow: worker
+  # Args to use when running Airflow workers (templated).
+  # Install new dependencies after create your config with your requirements.txt file
+  args:
+    - "bash"
+    - "-c"
+    # The format below is necessary to get `helm lint` happy
+    - |-
+      pip3 install -r /r/requirements.txt
+      exec \
+      airflow {{ semverCompare ">=2.0.0" .Values.airflowVersion | ternary "celery worker" "worker" }}
   # Mount additional volumes into worker.
+  # 1. mount for working directory
+  # 2. mount a config file with your python dependecies.
   extraVolumes:
     - name: temp-files
       emptyDir:
         sizeLimit: 10Gi
+    - name: requirements
+      configMap:
+        name: requirements
 
   extraVolumeMounts:
     - mountPath: /myvol/airflow/temp
       name: temp-files
+    - mountPath: /r/requirements.txt
+      name: requirements
+      readOnly: true
+      subPath: requirements.txt
 
   tolerations:
     - key: "only"
@@ -27,6 +43,7 @@ workers:
       value: "workers"
       effect: "NoSchedule"
 
+  # # Select certain nodes for airflow worker pods.
   nodeSelector:
     node-airflow: worker
 

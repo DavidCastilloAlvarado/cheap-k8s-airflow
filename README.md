@@ -36,5 +36,6 @@
 3. Apply ingress
 4. Update your A record in your CDN
 5. Apply cert Issues for production or stage
+6. Apply requirements.yaml -- update with your own packages and version like r.txt
 6. Start working with your Domain
 7. Update the gitRepo with yours

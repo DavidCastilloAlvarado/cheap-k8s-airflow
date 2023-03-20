@@ -4,7 +4,7 @@
 ## Intall Airflow using Helm
 
 # Get values
-helm show values apache-airflow/airflow > mycustomvalue.yaml
+helm show values apache-airflow/airflow > globalcustomvalue.yaml
 ##### https://airflow.apache.org/docs/helm-chart/stable/index.html
 ##### https://helm.sh/docs/intro/using_helm/
 # Install airflow in cluster
@@ -12,7 +12,7 @@ helm repo add apache-airflow https://airflow.apache.org
 # Install using cusom values.yaml file
 helm install airflow -f values.yaml apache-airflow/airflow --namespace airflow --create-namespace
 # If you already have the helm installed you need to update using the current calues
-helm upgrade -f values.yaml airflow apache-airflow/airflow --wait
+helm upgrade -f current-val.yaml airflow apache-airflow/airflow --wait
 
 
 
